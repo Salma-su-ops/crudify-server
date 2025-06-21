@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
@@ -26,6 +27,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(ProductController.class)
+@Import(TestSecurityConfig.class)
 class ProductControllerTest {
 
     @Autowired
@@ -50,7 +52,6 @@ class ProductControllerTest {
     }
 
     @Test
-    @WithMockUser
     void getAllProducts_ShouldReturnProductList() throws Exception {
         List<ProductResponse> products = Arrays.asList(testProductResponse);
         when(productService.getAllProducts()).thenReturn(products);
@@ -63,7 +64,6 @@ class ProductControllerTest {
     }
 
     @Test
-    @WithMockUser
     void getProductById_WhenExists_ShouldReturnProduct() throws Exception {
         when(productService.getProductById(1L)).thenReturn(Optional.of(testProductResponse));
 
@@ -75,7 +75,6 @@ class ProductControllerTest {
     }
 
     @Test
-    @WithMockUser
     void getProductById_WhenNotExists_ShouldReturnNotFound() throws Exception {
         when(productService.getProductById(anyLong())).thenReturn(Optional.empty());
 
@@ -84,12 +83,10 @@ class ProductControllerTest {
     }
 
     @Test
-    @WithMockUser
     void createProduct_WithValidData_ShouldReturnCreatedProduct() throws Exception {
         when(productService.createProduct(any(ProductRequest.class))).thenReturn(testProductResponse);
 
         mockMvc.perform(post("/api/products")
-                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(testProductRequest)))
                 .andExpect(status().isCreated())
@@ -98,25 +95,21 @@ class ProductControllerTest {
     }
 
     @Test
-    @WithMockUser
     void createProduct_WithInvalidData_ShouldReturnBadRequest() throws Exception {
         ProductRequest invalidRequest = new ProductRequest("", "", new BigDecimal("-1"), -1);
 
         mockMvc.perform(post("/api/products")
-                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(invalidRequest)))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    @WithMockUser
     void updateProduct_WhenExists_ShouldReturnUpdatedProduct() throws Exception {
         when(productService.updateProduct(eq(1L), any(ProductRequest.class)))
                 .thenReturn(Optional.of(testProductResponse));
 
         mockMvc.perform(put("/api/products/1")
-                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(testProductRequest)))
                 .andExpect(status().isOk())
@@ -125,40 +118,33 @@ class ProductControllerTest {
     }
 
     @Test
-    @WithMockUser
     void updateProduct_WhenNotExists_ShouldReturnNotFound() throws Exception {
         when(productService.updateProduct(eq(1L), any(ProductRequest.class)))
                 .thenReturn(Optional.empty());
 
         mockMvc.perform(put("/api/products/1")
-                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(testProductRequest)))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    @WithMockUser
     void deleteProduct_WhenExists_ShouldReturnNoContent() throws Exception {
         when(productService.deleteProduct(1L)).thenReturn(true);
 
-        mockMvc.perform(delete("/api/products/1")
-                .with(csrf()))
+        mockMvc.perform(delete("/api/products/1"))
                 .andExpect(status().isNoContent());
     }
 
     @Test
-    @WithMockUser
     void deleteProduct_WhenNotExists_ShouldReturnNotFound() throws Exception {
         when(productService.deleteProduct(anyLong())).thenReturn(false);
 
-        mockMvc.perform(delete("/api/products/1")
-                .with(csrf()))
+        mockMvc.perform(delete("/api/products/1"))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    @WithMockUser
     void searchProducts_ShouldReturnMatchingProducts() throws Exception {
         List<ProductResponse> products = Arrays.asList(testProductResponse);
         when(productService.searchProductsByName("Test")).thenReturn(products);
